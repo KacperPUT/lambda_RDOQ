@@ -10,7 +10,7 @@ Ten zestaw skryptów służy do analizy jakości kompresji JPEG i estymacji para
 
 ---
 
-## est\_derivative.py
+## est_derivative.py
 
 **Cel**
 Skrypt wykonuje analizę RD (Rate-Distortion) dla sekwencji wideo, dopasowując modele potęgowe do danych Luma i Chroma, a następnie oblicza odpowiadające pochodne λ(R). Łączy funkcjonalność estymacji liniowej i obliczania pochodnej w jednym przepływie pracy.
@@ -39,7 +39,7 @@ Skrypt wykonuje analizę RD (Rate-Distortion) dla sekwencji wideo, dopasowując 
 
 ---
 
-## derive\_params\_from\_lambda.py
+## derive_params_from_lambda.py
 
 **Cel**
 Agreguje parametry λ obliczone z poszczególnych sekwencji i tabel kwantyzacji, dopasowuje funkcję λ(Q) dla każdego kanału i layoutu.
@@ -63,7 +63,7 @@ Agreguje parametry λ obliczone z poszczególnych sekwencji i tabel kwantyzacji,
 
 ---
 
-## test\_lambda\_Q.py
+## test_lambda_Q.py
 
 **Cel**
 Testuje dopasowania λ(Q) z agregacji, wygładza dane i dopasowuje funkcje log-logowe dla Luma i Chroma. Tworzy wykresy porównujące dopasowanie z rzeczywistymi wartościami.
@@ -87,7 +87,7 @@ Testuje dopasowania λ(Q) z agregacji, wygładza dane i dopasowuje funkcje log-l
 
 ---
 
-## lambda\_real\_check.py
+## lambda_real_check.py
 
 **Cel**
 Weryfikuje dopasowania λ(Q) względem rzeczywistych wartości λ zapisanych w bazie danych. Oblicza błędy względne i tworzy wykresy porównawcze.
@@ -112,7 +112,7 @@ Weryfikuje dopasowania λ(Q) względem rzeczywistych wartości λ zapisanych w b
 
 ---
 
-## lambda\_Q\_plot.py
+## lambda_Q_plot.py
 
 **Cel**
 Tworzy ostateczny wykres λ(Q) dla Luma i Chroma (Q ≥ 15) na dwóch panelach, pokazując trend dla różnych tabel kwantyzacji (QTL).
@@ -141,8 +141,9 @@ Tworzy ostateczny wykres λ(Q) dla Luma i Chroma (Q ≥ 15) na dwóch panelach, 
 * Wszystkie wykresy i CSV są zapisywane w podfolderach skryptu.
 * Kolejność uruchamiania skryptów:
 
-  1. est\_derivative.py
-  2. derive\_params\_from\_lambda.py
-  3. test\_lambda\_Q.py
-  4. lambda\_real\_check.py
-  5. lambda\_Q\_plot.py
+  1. est_derivative.py
+  2. derive_params_from_lambda.py
+  3. test_lambda_Q.py
+  4. lambda_real_check.py
+  5. lambda_Q_plot.py
+
