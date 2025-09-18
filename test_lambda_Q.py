@@ -29,22 +29,22 @@ csv_files = glob.glob("lambda_aggregate/*_agg.csv")
 for csv_file in csv_files:
     fname = os.path.basename(csv_file)
     base = fname.replace("_agg.csv", "")
-    parts = base.split("_")
 
-    # Rozpoznawanie kanału i tabeli kwantyzacji
-    if parts[0] == "Luma":
+    # Rozpoznawanie kanału i QTL
+    if base.startswith("Luma"):
         ch_name = "Luma"
-        qtl = "default" if len(parts) == 1 else parts[1]
-    elif parts[0] == "Chroma":
+        qtl = base[len("Luma_"):] if "_" in base else "default"
+    elif base.startswith("Chroma"):
         ch_name = "Chroma Cb+Cr"
-        if len(parts) == 2:
-            qtl = "default"
-        else:
-            qtl = parts[2]
+        qtl = base[len("Chroma_Cb+Cr_"):] if "_" in base else "default"
     else:
         continue  # pomijamy nieznane pliki
 
     df = pd.read_csv(csv_file)
+
+    if "lambda_mean" not in df.columns:
+        print(f"Plik {csv_file} nie zawiera kolumny 'lambda_mean', pomijam")
+        continue
 
     # filtrujemy Q >= 15
     mask = df["Q"] >= 15
