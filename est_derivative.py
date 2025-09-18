@@ -76,6 +76,7 @@ for seq in sequence_names:
 
     for suffix, layout_name in quant_layouts.items():
         table_name = seq + suffix
+        qtl = layout_name  # <-- nazwa tabeli kwantyzacji
         print(f"\n[{seq}] Layout: {layout_name}")
         rows = fetch_data(table_name)
         if not rows:
@@ -132,7 +133,8 @@ for seq in sequence_names:
                 plt.close()
 
                 results.append({"seq": seq, "layout": layout_name, "channel": "Luma",
-                                "fit_type": "single", "params": (a_raw, b_raw), "pearson": float(r_val)})
+                                "fit_type": "single", "params": (a_raw, b_raw),
+                                "pearson": float(r_val), "qtl": qtl})
             except Exception as e:
                 print(f"[{table_name}] Luma błąd: {e}")
 
@@ -177,7 +179,8 @@ for seq in sequence_names:
 
                 results.append({
                     "seq": seq, "layout": layout_name, "channel": "Chroma Cb+Cr",
-                    "fit_type": "double", "params": (c1, b1_raw, c2, b2_raw), "pearson": float(r_val)
+                    "fit_type": "double", "params": (c1, b1_raw, c2, b2_raw),
+                    "pearson": float(r_val), "qtl": qtl
                 })
             except Exception as e:
                 print(f"[{table_name}] Chroma błąd: {e}")
@@ -186,13 +189,14 @@ for seq in sequence_names:
 csv_path = "fit_params.csv"
 with open(csv_path, "w", newline='') as f:
     writer = csv.writer(f)
-    writer.writerow(["sequence", "layout", "channel", "fit_type", "params", "pearson"])
+    writer.writerow(["sequence", "layout", "channel", "fit_type", "params", "pearson", "qtl"])
     for r in results:
         writer.writerow([
             r["seq"], r["layout"], r["channel"], r["fit_type"],
             ";".join([f"{x:.6e}" for x in r["params"]]),
-            f"{r['pearson']:.6f}"]
-        )
+            f"{r['pearson']:.6f}",
+            r["qtl"]
+        ])
 
 print(f"\nZapisano parametry do {csv_path}")
 
@@ -211,4 +215,3 @@ print("\n=== Średnie globalne |r| ===")
 for ch, r_list in global_r.items():
     if r_list:
         print(f"{ch}: {np.mean(r_list):.4f}")
-
