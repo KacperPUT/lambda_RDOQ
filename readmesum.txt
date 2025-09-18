@@ -135,6 +135,53 @@ Tworzy ostateczny wykres λ(Q) dla Luma i Chroma (Q ≥ 15) na dwóch panelach, 
 
 ---
 
+## miara_bjontegaarda.py
+
+**Cel**
+Oblicza różnice jakości i bitrate między trybem bazowym (`LambdaMode=0`) a nowym trybem λ (`LambdaMode=1`) dla różnych tabel kwantyzacji i grup wartości Q. Wykorzystuje metryki Bjøntegaarda (ΔPSNR, ΔBitrate) oraz oblicza zmiany czasów kodowania i dekodowania.
+
+**Wejście**
+
+* Baza SQLite: `lambda_compare.db`
+  Każda tabela sekwencji zawiera kolumny:
+  `Q, LambdaMode, QuantTabLayout, Bitrate_kib, PSNR_Y, PSNR_Cb, PSNR_Cr, EncodeTime_ms, DecodeTime_ms, TotalTime_ms`
+* Zdefiniowane w skrypcie grupy Q:
+
+  * **Q\_L**: 20–35
+  * **Q\_M**: 50–65
+  * **Q\_H**: 80–95
+* Układy kwantyzacji: `Default`, `Flat`, `SemiFlat`
+
+**Wyjście**
+
+* Tabele porównawcze wyświetlane w konsoli (dla każdej grupy Q i QTL).
+* Pliki CSV z wynikami: `wykresy_bj/<group>_<qtl>.csv` zawierające:
+
+  * ΔPSNR-Y \[dB]
+  * ΔPSNR-YCbCr \[dB] (średnia z Y, Cb, Cr)
+  * ΔBitrate-Y \[%]
+  * ΔBitrate-YCbCr \[%]
+  * ΔEncodeTime \[%]
+  * ΔDecodeTime \[%]
+  * ΔTotalTime \[%]
+* Dodatkowy wiersz ze średnimi wartościami Δ dla całej grupy.
+
+**Działanie**
+
+1. Łączy się z bazą `lambda_compare.db` i pobiera dane dla każdej sekwencji, layoutu i trybu λ.
+2. Filtruje punkty odpowiadające zadanym grupom Q (L, M, H).
+3. Oblicza metryki Bjøntegaarda:
+
+   * ΔPSNR-Y i ΔBitrate-Y – tylko dla luminancji,
+   * ΔPSNR-YCbCr i ΔBitrate-YCbCr – średnia z kanałów Y, Cb, Cr.
+4. Oblicza względne różnice czasów kodowania, dekodowania i całkowitego.
+5. Wyniki zapisuje do CSV i wypisuje w konsoli, razem z wartościami średnimi.
+
+**Cel obliczeń**
+Pozwala porównać efektywność kodowania między trybem bazowym a nowym trybem λ. Wyniki pokazują kompromis między stratą jakości i wzrostem bitrate a znaczną oszczędnością czasu kodowania.
+
+---
+
 ## Uwagi ogólne
 
 * Wymagane biblioteki: `numpy`, `pandas`, `matplotlib`, `scipy`, `tqdm`
@@ -146,4 +193,4 @@ Tworzy ostateczny wykres λ(Q) dla Luma i Chroma (Q ≥ 15) na dwóch panelach, 
   3. test_lambda_Q.py
   4. lambda_real_check.py
   5. lambda_Q_plot.py
-
+  6. miara_bjontegaarda.py
