@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 import pandas as pd
 
-# Zakres Q od 15 do 100
-Q = np.linspace(15, 100, 200)
+# Zakres Q od 20 do 100
+Q = np.linspace(20, 100, 200)
 
 # --- Wczytanie dopasowanych parametrów z CSV ---
 fit_results = pd.read_csv("lambda_fit_results_by_qtl.csv")
@@ -22,7 +22,7 @@ colors = {"default": "blue", "flat": "green", "semiflat": "red"}
 linestyles = {"default": "-", "flat": "--", "semiflat": ":"}
 
 fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
-fig.suptitle("λ(Q) dla Luma i Chroma – Q ≥ 15, wygładzone")
+fig.suptitle("λ(Q) dla Luma i Chroma")
 
 for i, channel in enumerate(channels):
     ax = axes[i]
@@ -39,7 +39,7 @@ for i, channel in enumerate(channels):
             lam = np.clip(lam, 0, 8000)
         # Wygładzanie
         if len(lam) >= 5:
-            lam = savgol_filter(lam, window_length=5, polyorder=2)
+            lam = savgol_filter(lam, window_length=11, polyorder=2)
         ax.plot(Q, lam, color=colors[qtl], linestyle=linestyles[qtl], linewidth=2, label=f"{qtl}")
     ax.set_ylabel("λ(Q)")
     ax.set_title(channel)
