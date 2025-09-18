@@ -1,65 +1,67 @@
 # README – Estymacja RD i parametrów λ dla JPEG
 
-Ten zestaw skryptów służy do analizy jakości kompresji JPEG i estymacji parametrów λ, które pozwalają przewidywać optymalną kwantyzację. Skrypty pozwalają:
+Ten zestaw skryptów służy do analizy jakości kompresji JPEG i estymacji parametrów λ, które pozwalają przewidywać optymalną kwantyzację. Skrypty umożliwiają:
 
-* zbierać dane RD (Rate-Distortion) z kodera,
-* dopasowywać modele matematyczne do zależności D(R),
-* obliczać pochodne i parametry λ,
-* agregować i dopasowywać λ w funkcji Q,
-* weryfikować dopasowania i generować wykresy.
+* zbieranie danych RD (Rate-Distortion) z kodera,
+* dopasowywanie modeli matematycznych do zależności D(R),
+* obliczanie pochodnych i parametrów λ,
+* agregowanie i dopasowywanie λ w funkcji Q,
+* weryfikację dopasowań i generowanie wykresów.
 
 ---
 
 ## est_derivative.py
 
 **Cel**
-Skrypt wykonuje analizę RD (Rate-Distortion) dla sekwencji wideo, dopasowując modele potęgowe do danych Luma i Chroma, a następnie oblicza odpowiadające pochodne λ(R). Łączy funkcjonalność estymacji liniowej i obliczania pochodnej w jednym przepływie pracy.
+Analiza RD (Rate-Distortion) dla sekwencji wideo, dopasowując modele potęgowe do danych Luma i Chroma, oraz obliczenie pochodnych λ(R). Obsługuje wszystkie tabele kwantyzacji: default, flat i semiflat.
 
 **Wejście**
 
-* SQLite DB: `jpegRD.db` – tabela dla każdej sekwencji z kolumnami `q_level`, `quant_main_bits_y`, `quant_main_dist_y`, `quant_main_bits_cb`, `quant_main_dist_cb`, `quant_main_bits_cr`, `quant_main_dist_cr`.
-* Lista sekwencji zdefiniowana w skrypcie.
-* Zakres jakości Q: `Q_MIN`–`Q_MAX`.
-* Układy kwantyzacji: domyślny, flat, semiflat.
+* SQLite DB: `jpegRD.db` – tabela dla każdej sekwencji z kolumnami `q_level`, `quant_main_bits_y`, `quant_main_dist_y`, `quant_main_bits_cb`, `quant_main_dist_cb`, `quant_main_bits_cr`, `quant_main_dist_cr`
+* Lista sekwencji zdefiniowana w skrypcie
+* Zakres jakości Q: `Q_MIN`–`Q_MAX`
+* Układy kwantyzacji: domyślny, flat, semiflat
 
 **Wyjście**
 
 * Wykresy RD (D vs R) dla Luma i Chroma: `plots/RD/Luma/` i `plots/RD/Chroma/`
 * Wykresy λ(R) dla Luma i Chroma: `plots/Lambda/Luma/` i `plots/Lambda/Chroma/`
-* CSV z parametrami dopasowania i współczynnikiem korelacji Pearsona: `fit_params.csv`
-* Podsumowanie średnich wartości |r| dla każdej sekwencji i globalnie w konsoli.
+* CSV z parametrami dopasowania, współczynnikiem Pearsona i nazwą tabeli kwantyzacji: `fit_params.csv`
+* Podsumowanie średnich wartości |r| dla każdej sekwencji i globalnie w konsoli
 
 **Działanie**
 
-1. Pobieranie danych z bazy.
-2. Dopasowanie modeli potęgowych: pojedynczej potęgi dla Luma i podwójnej dla Chroma.
-3. Obliczanie pochodnej λ(R) na podstawie dopasowanych parametrów.
+1. Pobranie danych z bazy.
+2. Dopasowanie modeli potęgowych: pojedyncza potęga dla Luma, podwójna dla Chroma.
+3. Obliczenie pochodnej λ(R) na podstawie dopasowanych parametrów.
 4. Generowanie wykresów RD i λ(R).
-5. Obliczanie i podsumowanie współczynnika Pearsona dla dopasowania.
+5. Obliczenie i podsumowanie współczynnika Pearsona.
+6. Zapis parametrów do CSV dla wszystkich tabel kwantyzacji (default, flat, semiflat).
 
 ---
 
 ## derive_params_from_lambda.py
 
 **Cel**
-Agreguje parametry λ obliczone z poszczególnych sekwencji i tabel kwantyzacji, dopasowuje funkcję λ(Q) dla każdego kanału i layoutu.
+Agreguje parametry λ z poszczególnych sekwencji i tabel kwantyzacji oraz dopasowuje funkcję λ(Q) dla każdego kanału i układu kwantyzacji.
 
 **Wejście**
 
-* CSV z parametrami dopasowania `fit_params.csv`
+* CSV z parametrami dopasowania: `fit_params.csv`
 * SQLite DB: `jpegRD.db`
 
 **Wyjście**
 
 * Wykresy λ(Q) dla poszczególnych tabel QTL: `lambda_aggregate_by_qtl/`
+* CSV z agregowanymi λ dla wszystkich QTL: `lambda_aggregate/*_agg.csv`
 * Parametry dopasowania α, β dla modelu `λ(Q) = α*(101-Q)^β` w konsoli
 
 **Działanie**
 
 1. Wczytuje parametry λ z CSV i dane RD z bazy.
-2. Agreguje λ dla wszystkich sekwencji i QTL.
-3. Dopasowuje funkcję `λ(Q) = α*(101-Q)^β` dla spójnej reprezentacji λ w zależności od Q.
-4. Generuje wykresy λ(Q) i zapisuje parametry dopasowania.
+2. Agreguje λ dla wszystkich sekwencji i QTL (default, flat, semiflat).
+3. Dopasowuje funkcję `λ(Q) = α*(101-Q)^β`.
+4. Generuje wykresy λ(Q) i zapisuje CSV dla wszystkich tabel.
 
 ---
 
@@ -79,18 +81,18 @@ Testuje dopasowania λ(Q) z agregacji, wygładza dane i dopasowuje funkcje log-l
 
 **Działanie**
 
-1. Wczytuje pliki `_agg.csv` dla wszystkich kanałów i tabel.
+1. Wczytuje wszystkie pliki `_agg.csv` dla kanałów i tabel QTL.
 2. Filtruje Q ≥ 15 i wygładza wartości λ.
 3. Dopasowuje modele log-log: kwadratowy dla Luma, sześcian dla Chroma.
-4. Oblicza R² dla dopasowania.
-5. Generuje wykresy porównujące średnie λ z dopasowaną funkcją.
+4. Oblicza R² dopasowania.
+5. Generuje wykresy porównawcze i zapisuje wyniki do CSV.
 
 ---
 
 ## lambda_real_check.py
 
 **Cel**
-Weryfikuje dopasowania λ(Q) względem rzeczywistych wartości λ zapisanych w bazie danych. Oblicza błędy względne i tworzy wykresy porównawcze.
+Weryfikuje dopasowania λ(Q) względem rzeczywistych wartości λ w bazie danych. Oblicza błędy względne i tworzy wykresy porównawcze.
 
 **Wejście**
 
@@ -115,7 +117,7 @@ Weryfikuje dopasowania λ(Q) względem rzeczywistych wartości λ zapisanych w b
 ## lambda_Q_plot.py
 
 **Cel**
-Tworzy ostateczny wykres λ(Q) dla Luma i Chroma (Q ≥ 15) na dwóch panelach, pokazując trend dla różnych tabel kwantyzacji (QTL).
+Tworzy ostateczny wykres λ(Q) dla Luma i Chroma (Q ≥ 15) na dwóch panelach, pokazując trend dla różnych tabel kwantyzacji.
 
 **Wejście**
 
@@ -138,54 +140,38 @@ Tworzy ostateczny wykres λ(Q) dla Luma i Chroma (Q ≥ 15) na dwóch panelach, 
 ## miara_bjontegaarda.py
 
 **Cel**
-Oblicza różnice jakości i bitrate między trybem bazowym (`LambdaMode=0`) a nowym trybem λ (`LambdaMode=1`) dla różnych tabel kwantyzacji i grup wartości Q. Wykorzystuje metryki Bjøntegaarda (ΔPSNR, ΔBitrate) oraz oblicza zmiany czasów kodowania i dekodowania.
+Oblicza różnice jakości i bitrate między trybem bazowym (`LambdaMode=0`) a nowym trybem λ (`LambdaMode=1`) dla różnych tabel kwantyzacji i grup wartości Q.
 
 **Wejście**
 
 * Baza SQLite: `lambda_compare.db`
   Każda tabela sekwencji zawiera kolumny:
   `Q, LambdaMode, QuantTabLayout, Bitrate_kib, PSNR_Y, PSNR_Cb, PSNR_Cr, EncodeTime_ms, DecodeTime_ms, TotalTime_ms`
-* Zdefiniowane w skrypcie grupy Q:
+* Zdefiniowane grupy Q w skrypcie:
 
-  * **Q\_L**: 20–35
-  * **Q\_M**: 50–65
-  * **Q\_H**: 80–95
-* Układy kwantyzacji: `Default`, `Flat`, `SemiFlat`
+  * **Q_L**: 20–35
+  * **Q_M**: 50–65
+  * **Q_H**: 80–95
+* Układy kwantyzacji: Default, Flat, SemiFlat
 
 **Wyjście**
 
-* Tabele porównawcze wyświetlane w konsoli (dla każdej grupy Q i QTL).
-* Pliki CSV z wynikami: `wykresy_bj/<group>_<qtl>.csv` zawierające:
-
-  * ΔPSNR-Y \[dB]
-  * ΔPSNR-YCbCr \[dB] (średnia z Y, Cb, Cr)
-  * ΔBitrate-Y \[%]
-  * ΔBitrate-YCbCr \[%]
-  * ΔEncodeTime \[%]
-  * ΔDecodeTime \[%]
-  * ΔTotalTime \[%]
-* Dodatkowy wiersz ze średnimi wartościami Δ dla całej grupy.
+* Tabele porównawcze w konsoli i CSV: `wykresy_bj/<group>_<qtl>.csv`
+* Dodatkowy wiersz ze średnimi wartościami Δ dla całej grupy
 
 **Działanie**
 
-1. Łączy się z bazą `lambda_compare.db` i pobiera dane dla każdej sekwencji, layoutu i trybu λ.
-2. Filtruje punkty odpowiadające zadanym grupom Q (L, M, H).
-3. Oblicza metryki Bjøntegaarda:
-
-   * ΔPSNR-Y i ΔBitrate-Y – tylko dla luminancji,
-   * ΔPSNR-YCbCr i ΔBitrate-YCbCr – średnia z kanałów Y, Cb, Cr.
-4. Oblicza względne różnice czasów kodowania, dekodowania i całkowitego.
-5. Wyniki zapisuje do CSV i wypisuje w konsoli, razem z wartościami średnimi.
-
-**Cel obliczeń**
-Pozwala porównać efektywność kodowania między trybem bazowym a nowym trybem λ. Wyniki pokazują kompromis między stratą jakości i wzrostem bitrate a znaczną oszczędnością czasu kodowania.
+1. Łączy się z bazą i pobiera dane dla każdej sekwencji, layoutu i trybu λ.
+2. Filtruje punkty odpowiadające zadanym grupom Q.
+3. Oblicza metryki Bjøntegaarda: ΔPSNR, ΔBitrate i zmiany czasów kodowania/odkodowania.
+4. Zapisuje wyniki do CSV i wyświetla w konsoli.
 
 ---
 
 ## Uwagi ogólne
 
 * Wymagane biblioteki: `numpy`, `pandas`, `matplotlib`, `scipy`, `tqdm`
-* Wszystkie wykresy i CSV są zapisywane w podfolderach skryptu.
+* Wszystkie wykresy i CSV są zapisywane w podfolderach skryptu
 * Kolejność uruchamiania skryptów:
 
   1. est_derivative.py
