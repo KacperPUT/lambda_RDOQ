@@ -64,8 +64,8 @@ for seq in sequences:
 
             # ΔBitrate i ΔPSNR
             dRateY = xBjontegaardMetric.bjontegaard_drate_new(bitrate0, psnrY0, bitrate1, psnrY1) * 100
-            psnrYCbCr0 = [(y + cb + cr)/3 for y, cb, cr in zip(psnrY0, psnrCb0, psnrCr0)]
-            psnrYCbCr1 = [(y + cb + cr)/3 for y, cb, cr in zip(psnrY1, psnrCb1, psnrCr1)]
+            psnrYCbCr0 = [(6*y + cb + cr)/8 for y, cb, cr in zip(psnrY0, psnrCb0, psnrCr0)]
+            psnrYCbCr1 = [(6*y + cb + cr)/8 for y, cb, cr in zip(psnrY1, psnrCb1, psnrCr1)]
             dRateYCbCr = xBjontegaardMetric.bjontegaard_drate_new(bitrate0, psnrYCbCr0, bitrate1, psnrYCbCr1) * 100
 
             dPSNRY = xBjontegaardMetric.bjontegaard_dpsnr_new(bitrate0, psnrY0, bitrate1, psnrY1)
