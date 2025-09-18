@@ -10,64 +10,52 @@ Ten zestaw skryptów służy do analizy jakości kompresji JPEG i estymacji para
 
 ---
 
-## 1. estymacja\_liniowa.py
+## est\_derivative.py
 
 **Cel**
-Dopasowuje modele jednoskładnikowe (Luma) i dwuskładnikowe (Chroma) do danych RD z bazy `jpegRD.db` i oblicza współczynnik korelacji Pearsona |r|.
+Skrypt wykonuje analizę RD (Rate-Distortion) dla sekwencji wideo, dopasowując modele potęgowe do danych Luma i Chroma, a następnie oblicza odpowiadające pochodne λ(R). Łączy funkcjonalność estymacji liniowej i obliczania pochodnej w jednym przepływie pracy.
 
 **Wejście**
 
-* SQLite DB: `jpegRD.db`
-* Tabele z kolumnami `q_level`, `quant_main_bits_*`, `quant_main_dist_*`
+* SQLite DB: `jpegRD.db` – tabela dla każdej sekwencji z kolumnami `q_level`, `quant_main_bits_y`, `quant_main_dist_y`, `quant_main_bits_cb`, `quant_main_dist_cb`, `quant_main_bits_cr`, `quant_main_dist_cr`.
+* Lista sekwencji zdefiniowana w skrypcie.
+* Zakres jakości Q: `Q_MIN`–`Q_MAX`.
+* Układy kwantyzacji: domyślny, flat, semiflat.
 
 **Wyjście**
 
-* Wykresy dopasowania RD dla Luma i Chroma (`plots_final/Luma` i `plots_final/Chroma`)
-* Średnie wartości |r| dla każdego layoutu kwantyzacji w konsoli
+* Wykresy RD (D vs R) dla Luma i Chroma: `plots/RD/Luma/` i `plots/RD/Chroma/`
+* Wykresy λ(R) dla Luma i Chroma: `plots/Lambda/Luma/` i `plots/Lambda/Chroma/`
+* CSV z parametrami dopasowania i współczynnikiem korelacji Pearsona: `fit_params.csv`
+* Podsumowanie średnich wartości |r| dla każdej sekwencji i globalnie w konsoli.
 
 **Działanie**
 
-1. Pobiera dane z bazy dla sekwencji i layoutów tabel kwantyzacji (`default`, `flat`, `semiflat`).
-2. Filtruje zakres Q od 4 do 100.
-3. Dopasowuje model `D = a*R^b` dla Luma i `D = a1*R^b1 + a2*R^b2` dla Chroma.
-4. Oblicza współczynnik Pearsona |r| między rzeczywistymi i przewidzianymi wartościami.
-5. Generuje wykresy dla każdej sekwencji i layoutu.
+1. **Pobieranie danych z bazy:**
+   Skrypt łączy się z `jpegRD.db` i pobiera sumaryczne liczby bitów i odkształcenia dla wszystkich Q dla każdej sekwencji i układu kwantyzacji.
 
-**Funkcje użyte w pliku**
+2. **Dopasowanie modeli potęgowych:**
 
-* Dopasowanie modelu RD metodą najmniejszych kwadratów
-* Obliczenie współczynnika korelacji Pearsona
+   * Luma: model pojedynczej potęgi $D = a R^b$
+   * Chroma (Cb+Cr): model podwójnej potęgi $D = c_1 R^{b_1} + c_2 R^{b_2}$
+     Normalizacja danych zapewnia stabilność dopasowania, a funkcje `norm_to_raw_single` i `norm_to_raw_double` przeliczają parametry znormalizowane na oryginalną skalę.
 
----
+3. **Obliczanie pochodnej λ(R):**
+   Na podstawie dopasowanych parametrów obliczana jest pochodna λ(R), czyli szybkość zmiany D względem R.
+   Funkcje: `lambda_from_single` i `lambda_from_double`.
 
-## 2. pochodna\_liniowa.py
+4. **Generowanie wykresów:**
 
-**Cel**
-Na podstawie dopasowanych modeli RD oblicza λ(R) jako pochodną funkcji D(R) i zapisuje wyniki do CSV. Tworzy również wykresy RD i λ.
+   * RD: rozrzut danych i linia dopasowania D(R)
+   * λ(R): wykres pochodnej λ w funkcji R
+     Wykresy zapisywane są w katalogach `plots/RD/` i `plots/Lambda/`.
 
-**Wejście**
+5. **Podsumowanie Pearsona:**
+   Skrypt oblicza współczynnik korelacji Pearsona między D obserwowanym a dopasowanym dla każdej sekwencji i kanału oraz wyświetla średnie wartości globalne.
 
-* SQLite DB: `jpegRD.db`
-* Wymaga danych z estymacja\_liniowa.py
+**Cel dopasowania funkcji i obliczania λ(R)**
+Umożliwia spójną estymację zależności D(R) i pochodnej λ(R) dla wszystkich sekwencji i układów kwantyzacji, co ułatwia dalszą analizę, agregację parametrów i generowanie wykresów porównawczych.
 
-**Wyjście**
-
-* CSV z parametrami dopasowania: `fit_params.csv`
-* Wykresy RD: `plots/RD/Luma` i `plots/RD/Chroma`
-* Wykresy λ(R): `plots/Lambda/Luma` i `plots/Lambda/Chroma`
-
-**Działanie**
-
-1. Wczytuje dane RD z bazy i filtruje je według Q.
-2. Dopasowuje modele (jednoskładnikowy dla Luma, dwuskładnikowy dla Chroma).
-3. Oblicza λ(R) jako pochodną D(R).
-4. Generuje wykresy D(R) i λ(R) dla każdej sekwencji i layoutu.
-5. Zapisuje parametry dopasowania i korelacje Pearsona w CSV.
-
-**Funkcje użyte w pliku**
-
-* Obliczanie pochodnej funkcji D(R)
-* Tworzenie wykresów RD i λ
 
 ---
 
