@@ -31,42 +31,22 @@ Skrypt wykonuje analizę RD (Rate-Distortion) dla sekwencji wideo, dopasowując 
 
 **Działanie**
 
-1. **Pobieranie danych z bazy:**
-   Skrypt łączy się z `jpegRD.db` i pobiera sumaryczne liczby bitów i odkształcenia dla wszystkich Q dla każdej sekwencji i układu kwantyzacji.
-
-2. **Dopasowanie modeli potęgowych:**
-
-   * Luma: model pojedynczej potęgi $D = a R^b$
-   * Chroma (Cb+Cr): model podwójnej potęgi $D = c_1 R^{b_1} + c_2 R^{b_2}$
-     Normalizacja danych zapewnia stabilność dopasowania, a funkcje `norm_to_raw_single` i `norm_to_raw_double` przeliczają parametry znormalizowane na oryginalną skalę.
-
-3. **Obliczanie pochodnej λ(R):**
-   Na podstawie dopasowanych parametrów obliczana jest pochodna λ(R), czyli szybkość zmiany D względem R.
-   Funkcje: `lambda_from_single` i `lambda_from_double`.
-
-4. **Generowanie wykresów:**
-
-   * RD: rozrzut danych i linia dopasowania D(R)
-   * λ(R): wykres pochodnej λ w funkcji R
-     Wykresy zapisywane są w katalogach `plots/RD/` i `plots/Lambda/`.
-
-5. **Podsumowanie Pearsona:**
-   Skrypt oblicza współczynnik korelacji Pearsona między D obserwowanym a dopasowanym dla każdej sekwencji i kanału oraz wyświetla średnie wartości globalne.
-
-**Cel dopasowania funkcji i obliczania λ(R)**
-Umożliwia spójną estymację zależności D(R) i pochodnej λ(R) dla wszystkich sekwencji i układów kwantyzacji, co ułatwia dalszą analizę, agregację parametrów i generowanie wykresów porównawczych.
-
+1. Pobieranie danych z bazy.
+2. Dopasowanie modeli potęgowych: pojedynczej potęgi dla Luma i podwójnej dla Chroma.
+3. Obliczanie pochodnej λ(R) na podstawie dopasowanych parametrów.
+4. Generowanie wykresów RD i λ(R).
+5. Obliczanie i podsumowanie współczynnika Pearsona dla dopasowania.
 
 ---
 
-## 3. derive\_params\_from\_lambda.py
+## derive\_params\_from\_lambda.py
 
 **Cel**
 Agreguje parametry λ obliczone z poszczególnych sekwencji i tabel kwantyzacji, dopasowuje funkcję λ(Q) dla każdego kanału i layoutu.
 
 **Wejście**
 
-* CSV z dopasowanymi parametrami `fit_params.csv`
+* CSV z parametrami dopasowania `fit_params.csv`
 * SQLite DB: `jpegRD.db`
 
 **Wyjście**
@@ -81,18 +61,16 @@ Agreguje parametry λ obliczone z poszczególnych sekwencji i tabel kwantyzacji,
 3. Dopasowuje funkcję `λ(Q) = α*(101-Q)^β` dla spójnej reprezentacji λ w zależności od Q.
 4. Generuje wykresy λ(Q) i zapisuje parametry dopasowania.
 
-**Cel dopasowania funkcji**
-Umożliwia spójną reprezentację λ w zależności od Q dla wszystkich sekwencji i tabel, co ułatwia analizę, porównanie wyników i generowanie wykresów trendów.
-
 ---
 
-## 4. test\_lambda\_Q.py
+## test\_lambda\_Q.py
 
 **Cel**
 Testuje dopasowania λ(Q) z agregacji, wygładza dane i dopasowuje funkcje log-logowe dla Luma i Chroma. Tworzy wykresy porównujące dopasowanie z rzeczywistymi wartościami.
 
 **Wejście**
-Pliki CSV z agregowanymi λ: `lambda_aggregate/*_agg.csv`
+
+* Pliki CSV z agregowanymi λ: `lambda_aggregate/*_agg.csv`
 
 **Wyjście**
 
@@ -109,7 +87,7 @@ Pliki CSV z agregowanymi λ: `lambda_aggregate/*_agg.csv`
 
 ---
 
-## 5. lambda\_real\_check.py
+## lambda\_real\_check.py
 
 **Cel**
 Weryfikuje dopasowania λ(Q) względem rzeczywistych wartości λ zapisanych w bazie danych. Oblicza błędy względne i tworzy wykresy porównawcze.
@@ -134,16 +112,18 @@ Weryfikuje dopasowania λ(Q) względem rzeczywistych wartości λ zapisanych w b
 
 ---
 
-## 6. lambda\_Q\_plot.py
+## lambda\_Q\_plot.py
 
 **Cel**
 Tworzy ostateczny wykres λ(Q) dla Luma i Chroma (Q ≥ 15) na dwóch panelach, pokazując trend dla różnych tabel kwantyzacji (QTL).
 
 **Wejście**
-Parametry dopasowania λ(Q): `lambda_fit_results_by_qtl.csv`
+
+* Parametry dopasowania λ(Q): `lambda_fit_results_by_qtl.csv`
 
 **Wyjście**
-Wykres PNG: `lambda_Q_plot_two_panels.png`
+
+* Wykres PNG: `lambda_Q_plot_two_panels.png`
 
 **Działanie**
 
@@ -161,9 +141,8 @@ Wykres PNG: `lambda_Q_plot_two_panels.png`
 * Wszystkie wykresy i CSV są zapisywane w podfolderach skryptu.
 * Kolejność uruchamiania skryptów:
 
-  1. estymacja\_liniowa.py
-  2. pochodna\_liniowa.py
-  3. derive\_params\_from\_lambda.py
-  4. test\_lambda\_Q.py
-  5. lambda\_real\_check.py
-  6. lambda\_Q\_plot.py
+  1. est\_derivative.py
+  2. derive\_params\_from\_lambda.py
+  3. test\_lambda\_Q.py
+  4. lambda\_real\_check.py
+  5. lambda\_Q\_plot.py
