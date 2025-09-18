@@ -10,6 +10,7 @@ import os
 db_path = r"C:\Users\ITM\Desktop\database\jpegRD.db"
 params_csv = "fit_params.csv"
 
+os.makedirs("lambda_aggregate", exist_ok=True)
 os.makedirs("lambda_aggregate_by_qtl", exist_ok=True)
 
 # --- wczytanie parametrów estymacji ---
@@ -19,7 +20,7 @@ with open(params_csv, newline='') as f:
     for row in reader:
         seq = row['sequence']
         ch = row['channel']
-        qtl = row.get('qtl', 'default')
+        qtl = row.get('qtl', 'default')  # jeśli brak kolumny, default
         params = row['params']
         p_list = [float(x) for x in params.split(';') if x.strip() != '']
         fit_dict[(seq, ch, qtl)] = p_list
@@ -82,53 +83,35 @@ for seq in sequences:
                 if np.isfinite(lam):
                     lambda_per_qtl['Chroma Cb+Cr'][qtl].setdefault(Q, []).append(lam)
 
-# --- agregacja, wygładzanie i dopasowanie osobno dla każdej tabeli ---
-def model(Q, alpha, beta):
-    return alpha * (101-Q)**beta
-
-fit_results = {}
+# --- agregacja i zapis CSV dla każdego QTL ---
 for ch in ['Luma','Chroma Cb+Cr']:
-    fit_results[ch] = {}
     for qtl in qtl_list:
         data = lambda_per_qtl[ch][qtl]
+        if not data:
+            continue
         Qs_sorted = sorted(data.keys())
-        if not Qs_sorted:
-            continue
-        lam_mean = np.array([np.median(data[Q]) for Q in Qs_sorted])
-        # wygładzenie
-        if len(lam_mean) >= 7:
-            lam_mean_smooth = savgol_filter(lam_mean, window_length=5, polyorder=2)
-        else:
-            lam_mean_smooth = lam_mean.copy()
-        Q_fit = np.array(Qs_sorted)
-        weights = 1 / (1 + np.abs(lam_mean_smooth - np.median(lam_mean_smooth)))
-        try:
-            popt,_ = curve_fit(model, Q_fit, lam_mean_smooth, p0=[1000,1.0], sigma=weights, maxfev=200000)
-            alpha,beta = popt
-            lam_pred = model(Q_fit, alpha, beta)
-            r = pearsonr(lam_mean_smooth, lam_pred)[0]
-            rmse = np.sqrt(np.mean((lam_mean_smooth - lam_pred)**2))
-            fit_results[ch][qtl] = {'alpha':alpha,'beta':beta,'r':r,'rmse':rmse,'Q':Q_fit,'lam':lam_mean_smooth,'lam_pred':lam_pred}
-            print(f"{ch} [{qtl}]: lambda(Q) = {alpha:.6g}*(101-Q)^{beta:.6g}, |r|={abs(r):.4f}, RMSE={rmse:.4f}")
-        except Exception as e:
-            print(f"{ch} [{qtl}] dopasowanie nieudane: {e}")
+        lam_mean = [np.median(data[Q]) for Q in Qs_sorted]
+        lam_std = [np.std(data[Q]) for Q in Qs_sorted]
 
-# --- wykresy ---
-for ch in ['Luma','Chroma Cb+Cr']:
-    plt.figure(figsize=(8,5))
-    for qtl in qtl_list:
-        if qtl not in fit_results[ch]:
-            continue
-        info = fit_results[ch][qtl]
-        plt.plot(info['Q'], info['lam'], 'o', label=f"{qtl} median")
-        Qplot = np.linspace(min(info['Q']), max(info['Q']),200)
-        plt.plot(Qplot, model(Qplot, info['alpha'], info['beta']), '-', label=f"{qtl} fit")
-    plt.xlabel("Q")
-    plt.ylabel("lambda")
-    plt.title(f"Lambda(Q) - {ch} osobno dla tabel")
-    plt.grid(True)
-    plt.legend()
-    plt.savefig(f"lambda_aggregate_by_qtl/{ch.replace(' ','_')}_by_qtl.png")
-    plt.close()
+        csv_path = os.path.join("lambda_aggregate", f"{ch}_{qtl}_agg.csv")
+        with open(csv_path, "w", newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Q","lambda_mean","lambda_std"])
+            for q,lm,ls in zip(Qs_sorted, lam_mean, lam_std):
+                writer.writerow([q,lm,ls])
+        print(f"Zapisano: {csv_path}")
 
-print("Gotowe: dopasowania osobno dla każdej tabeli kwantyzacji zapisane w lambda_aggregate_by_qtl/")
+        # wykres λ(Q)
+        lam_smooth = savgol_filter(lam_mean, window_length=5 if len(lam_mean)>=5 else len(lam_mean), polyorder=2)
+        plt.figure(figsize=(8,5))
+        plt.plot(Qs_sorted, lam_mean, 'o', label="mediana λ")
+        plt.plot(Qs_sorted, lam_smooth, '-', label="wygładzenie")
+        plt.xlabel("Q")
+        plt.ylabel("lambda")
+        plt.title(f"{ch} - {qtl}")
+        plt.grid(True)
+        plt.legend()
+        plt.savefig(f"lambda_aggregate_by_qtl/{ch.replace(' ','_')}_{qtl}_lambda.png")
+        plt.close()
+
+print("Gotowe: dopasowania i CSV dla wszystkich QTL zapisane w lambda_aggregate/ i wykresy w lambda_aggregate_by_qtl/")
